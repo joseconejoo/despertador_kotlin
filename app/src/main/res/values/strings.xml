@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">despertador_kotlin</string>
+    <string name="service_name">Mi Servicio de Notificaciones OJAS</string>
+</resources>
