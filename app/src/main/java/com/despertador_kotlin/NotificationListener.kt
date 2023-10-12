@@ -18,6 +18,8 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import android.provider.Settings
+import android.app.KeyguardManager
+
 class NotificationListener : NotificationListenerService() {
     private lateinit var mediaPlayer: MediaPlayer
     companion object {
@@ -84,7 +86,7 @@ class NotificationListener : NotificationListenerService() {
         Log.d("NotificationListener", "Notification text: $text")
         //if (text != null && text.contains("pattern,", true)) {
         //if (text != null && text.contains("prog1", true)) {
-        if (text.contains("prog1", ignoreCase = true)) {
+        if (text.contains("pattern,", ignoreCase = true)) {
             notificationPresent = true
             if (!mediaPlayer.isPlaying) {
                 setVolumeToMax()
@@ -126,10 +128,18 @@ class NotificationListener : NotificationListenerService() {
                 // encender pantalla
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 val wakeLock = powerManager.newWakeLock(
+                    PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "MyApp::WakeLockTag"
+                )
+                wakeLock.acquire(10*60*1000L /*10 minutes*/)
+                /*
+                val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+                val wakeLock = powerManager.newWakeLock(
                     PowerManager.PARTIAL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                     "MyApp:WakeLock"
                 )
                 wakeLock.acquire(3000) // Duración en milisegundos para mantener la pantalla encendida
+                 */
             }
         }
     }

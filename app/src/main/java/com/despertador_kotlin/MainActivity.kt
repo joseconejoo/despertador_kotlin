@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
@@ -28,10 +29,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import android.os.PowerManager
 import android.os.PowerManager.WakeLock
-
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxColors
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 class MainActivity : ComponentActivity() {
     private lateinit var mediaPlayer: MediaPlayer
-
     override fun onCreate(savedInstanceState: Bundle?) {
 
         // pantalla_bloqueada_start
@@ -100,12 +109,14 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        //verticalArrangement = Arrangement.Center,
+                        verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Greeting("this is an alarm")
-                        MyApp()
+                        Greeting("this is an alarm", Modifier.padding(bottom = 4.dp))
+                        MyApp(this@MainActivity, Modifier.padding(bottom = 4.dp))
+                        CustomCheckboxDeshabilitarAlarma(Modifier.padding(bottom = 4.dp))
                     }
                 }
 
@@ -123,28 +134,36 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 @Composable
-fun MyApp() {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+fun MyApp(context: Context, modifier: Modifier = Modifier) {
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Button(onClick = {
-        /* Aquí va el código que se ejecutará al presionar el botón */
+            /* Aquí va el código que se ejecutará al presionar el botón */
             NotificationListener.notificationPresent = false
+            setVolumeToMin(context)
         }) {
             Text("Apagar")
         }
     }
 }
-
-@Preview(showBackground = true)
 @Composable
-fun GreetingPreview() {
-    Despertador_kotlinTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            MyApp()
-        }
-        //Greeting("Android12")
+fun CustomCheckboxDeshabilitarAlarma(modifier: Modifier = Modifier) {
+    val checked = remember { mutableStateOf(false) }
+    Column(modifier = modifier) {
+        Checkbox(
+            checked = checked.value,
+            onCheckedChange = { isChecked -> checked.value = isChecked },
+            colors = CheckboxDefaults.colors(
+                checkedColor = Color.Magenta,
+                uncheckedColor = Color.Gray
+            )
+        )
+        Text("Custom checkbox is ${if (checked.value) "checked" else "unchecked"}")
     }
 }
+
+fun setVolumeToMin(context: Context) {
+    val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0)
+}
+
 
