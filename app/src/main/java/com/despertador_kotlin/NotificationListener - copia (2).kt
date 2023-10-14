@@ -5,6 +5,7 @@ import android.media.MediaPlayer
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.app.Notification
+import android.content.pm.PackageManager
 import android.util.Log
 
 class NotificationListenerRespaldo : NotificationListenerService() {
@@ -68,5 +69,21 @@ class NotificationListenerRespaldo : NotificationListenerService() {
         mediaPlayer.release()
         //stopRunnable()
     }
+    // only backup of some things
+    private fun getApplicationNameFromPackageName(packageName: String): String {
+        val packageManager = applicationContext.packageManager
+        var applicationLabel: String? = null
+        try {
+            val applicationInfo = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+            val applicationLabelRes = applicationInfo.labelRes
+            if (applicationLabelRes != 0) {
+                applicationLabel = packageManager.getText(packageName, applicationLabelRes, applicationInfo).toString()
+            }
+        } catch (e: PackageManager.NameNotFoundException) {
+            e.printStackTrace()
+        }
+        return applicationLabel ?: packageName
+    }
+    //val appName = getApplicationNameFromPackageName(packageName).lowercase()
 
 }

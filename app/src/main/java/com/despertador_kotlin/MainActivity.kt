@@ -26,9 +26,7 @@ import com.despertador_kotlin.ui.theme.Despertador_kotlinTheme
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import android.os.PowerManager
-import android.os.PowerManager.WakeLock
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.compose.foundation.layout.Column
@@ -37,10 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxColors
 import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.ComposableInferredTarget
+
+//import android.service.notification.NotificationListenerService
 class MainActivity : ComponentActivity() {
     private lateinit var mediaPlayer: MediaPlayer
+
     override fun onCreate(savedInstanceState: Bundle?) {
 
         // pantalla_bloqueada_start
@@ -114,7 +116,7 @@ class MainActivity : ComponentActivity() {
                         verticalArrangement = Arrangement.Top,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Greeting("this is an alarm", Modifier.padding(bottom = 4.dp))
+                        Greeting("esta es una alarma por notificaciones", Modifier.padding(bottom = 4.dp))
                         MyApp(this@MainActivity, Modifier.padding(bottom = 4.dp))
                         CustomCheckboxDeshabilitarAlarma(Modifier.padding(bottom = 4.dp))
                     }
@@ -129,7 +131,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Text(
-        text = "Hello $name!",
+        text = "Hola, $name!",
         modifier = modifier
     )
 }
@@ -145,19 +147,59 @@ fun MyApp(context: Context, modifier: Modifier = Modifier) {
         }
     }
 }
+
 @Composable
 fun CustomCheckboxDeshabilitarAlarma(modifier: Modifier = Modifier) {
     val checked = remember { mutableStateOf(false) }
+    val showDialog = remember { mutableStateOf(false) }
+
+    if (showDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showDialog.value = false },
+            title = { Text("Confirmación") },
+            text = { Text("¿Estás seguro de que quieres habilitar (Hara que no suene la alarma)?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        checked.value = true
+                        NotificationListener.NoHacerSonarMediaPlayerCheckbox = checked.value
+                        showDialog.value = false
+                    }
+                ) {
+                    Text("Sí")
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        checked.value = false
+                        NotificationListener.NoHacerSonarMediaPlayerCheckbox = checked.value
+                        showDialog.value = false
+                    }
+                ) {
+                    Text("No")
+                }
+            }
+        )
+    }
+
     Column(modifier = modifier) {
         Checkbox(
             checked = checked.value,
-            onCheckedChange = { isChecked -> checked.value = isChecked },
+            onCheckedChange = { isChecked ->
+                if (isChecked) {
+                    showDialog.value = true
+                } else {
+                    checked.value = false
+                    NotificationListener.NoHacerSonarMediaPlayerCheckbox = checked.value
+                }
+            },
             colors = CheckboxDefaults.colors(
                 checkedColor = Color.Magenta,
                 uncheckedColor = Color.Gray
             )
         )
-        Text("Custom checkbox is ${if (checked.value) "checked" else "unchecked"}")
+        Text("La alarma ${if (checked.value) "No Sonara" else "Sonara"}")
     }
 }
 

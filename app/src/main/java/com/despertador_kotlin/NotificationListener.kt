@@ -19,12 +19,16 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import android.provider.Settings
 import android.app.KeyguardManager
-
+import android.content.pm.PackageManager
+import java.util.Calendar
 class NotificationListener : NotificationListenerService() {
     private lateinit var mediaPlayer: MediaPlayer
     companion object {
-        var notificationPresent = false
+        var notificationPresent:Boolean = false
+        var NoHacerSonarMediaPlayerCheckbox:Boolean = false
+
     }
+
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
 
@@ -39,6 +43,37 @@ class NotificationListener : NotificationListenerService() {
             handleNotification(sbn)
         }
     }
+    fun tryReconnectService() {
+        toggleNotificationListenerService()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val componentName = ComponentName(this, NotificationListener::class.java)
+            NotificationListenerService.requestRebind(componentName)
+        }
+    }
+
+    private fun toggleNotificationListenerService() {
+        val pm = packageManager
+        pm.setComponentEnabledSetting(
+            ComponentName(this, NotificationListener::class.java),
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.DONT_KILL_APP
+        )
+        pm.setComponentEnabledSetting(
+            ComponentName(this, NotificationListener::class.java),
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP
+        )
+    }
+    fun startMediaPlayer() {
+        val currentTime = Calendar.getInstance()
+        val currentHour = currentTime.get(Calendar.HOUR_OF_DAY)
+        //if (!NoHacerSonarMediaPlayerCheckbox && !mediaPlayer.isPlaying && (currentHour < 10 || currentHour > 14)) {
+
+        if (!NoHacerSonarMediaPlayerCheckbox && !mediaPlayer.isPlaying) {
+            setVolumeToMax()
+            mediaPlayer.start()
+        }
+    }
     override fun onCreate() {
         super.onCreate()
 
@@ -49,9 +84,9 @@ class NotificationListener : NotificationListenerService() {
         handler = Handler(Looper.getMainLooper())
         runnable = object : Runnable {
             override fun run() {
+                tryReconnectService()
                 if (notificationPresent && !mediaPlayer.isPlaying) {
-                    setVolumeToMax()
-                    mediaPlayer.start()
+                    startMediaPlayer()
                 }
                 checkActiveNotifications()
                 //handler.postDelayed(this, 60000)
@@ -79,18 +114,20 @@ class NotificationListener : NotificationListenerService() {
         val extras = notification.extras
         //val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.lowercase()
         //val extras = notification.extras
+        val packageName = sbn.packageName
+        val appName = packageName.lowercase()
+
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.lowercase()
         val text_normal = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.lowercase()
         val subText = extras.getCharSequence(Notification.EXTRA_SUB_TEXT)?.toString()?.lowercase()
-        val text = listOfNotNull(title, text_normal, subText).joinToString(" ")
+        val text = listOfNotNull("$appName (<-appIs-)", title, text_normal, subText).joinToString(" ")
         Log.d("NotificationListener", "Notification text: $text")
         //if (text != null && text.contains("pattern,", true)) {
         //if (text != null && text.contains("prog1", true)) {
-        if (text.contains("pattern,", ignoreCase = true)) {
+        if (text.contains("prog1", ignoreCase = true)) {
             notificationPresent = true
             if (!mediaPlayer.isPlaying) {
-                setVolumeToMax()
-                mediaPlayer.start()
+                startMediaPlayer()
 
                 val notificationIntent = Intent(this, MainActivity::class.java)
                 notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -126,12 +163,17 @@ class NotificationListener : NotificationListenerService() {
                 }
 
                 // encender pantalla
+                /*
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 val wakeLock = powerManager.newWakeLock(
                     PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
                     "MyApp::WakeLockTag"
                 )
                 wakeLock.acquire(10*60*1000L /*10 minutes*/)
+                // el codigo si funciona pero la app debe ser la ultima cosa abierta
+                // antes de bloquear con clave el telefono
+                */
+
                 /*
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 val wakeLock = powerManager.newWakeLock(
