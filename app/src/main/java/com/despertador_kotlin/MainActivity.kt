@@ -6,6 +6,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 
 import android.app.PendingIntent
+import android.app.admin.DeviceAdminReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -38,12 +39,32 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.ComposableInferredTarget
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.util.Log
+import android.app.Activity
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.os.CountDownTimer
 
 //import android.service.notification.NotificationListenerService
 class MainActivity : ComponentActivity() {
     private lateinit var mediaPlayer: MediaPlayer
+    companion object {
+        private const val REQUEST_CODE_ENABLE_ADMIN = 1
+    }
+    private val enableAdminLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            // El usuario ha concedido los permisos de administración de dispositivos
+            // Puedes cambiar el tiempo de suspensión de la pantalla aquí
+        } else {
+            // El usuario ha rechazado los permisos de administración de dispositivos
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("enablingScreen01", "Notification text: 0")
 
         // pantalla_bloqueada_start
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
@@ -55,6 +76,7 @@ class MainActivity : ComponentActivity() {
             window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
         }
         // pantalla_bloqueada_end
+        Log.d("enablingScreen02", "Notification text: 0")
         // bateria_optimizacion_ignore_start
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -71,6 +93,45 @@ class MainActivity : ComponentActivity() {
             }
         }
         // bateria_optimizacion_ignore_end
+        Log.d("enablingScreen03", "Notification text: 0")
+        // permiso_pantalla_start
+        // test_start
+        /*
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.System.canWrite(this)) {
+                val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            }
+        }
+        */
+        // test_end
+        /*
+        val devicePolicyManager = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+
+        Log.d("enablingScreen04", "Notification text: 0")
+        //val componentName = ComponentName(this, DevicePolicyManager::class.java)
+        val componentName = ComponentName(this, MyDeviceAdminReceiver::class.java)
+        Log.d("enablingScreen05", "Notification text: 0")
+        if (devicePolicyManager.isAdminActive(componentName)) {
+            if (true) {
+                Log.d("enablingScreen1", "Notification text: 0")
+                Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 120000) // 1 minuto
+                Log.d("enablingScreen2", "Notification text: 0")
+            } else {
+                Settings.System.putInt(contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 0) // nunca
+            }
+        } else {
+            Log.d("enablingScreen06", "Notification text: 0")
+            val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+            intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, componentName)
+            intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION, "Necesitamos permiso para administrar tu dispositivo")
+            startActivity(intent)
+            Log.d("enablingScreen07", "Notification text: 0")
+        }
+
+        */
+        // permiso_pantalla_end
         // layout_start
         setContentView(R.layout.activity_main)
         // layout_end
@@ -147,11 +208,30 @@ fun MyApp(context: Context, modifier: Modifier = Modifier) {
         }
     }
 }
-
+fun setScreenState(context: Context, shouldKeepScreenOn: Boolean) {
+    val activity = context as Activity
+    if (shouldKeepScreenOn) {
+        activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    } else {
+        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+}
 @Composable
 fun CustomCheckboxDeshabilitarAlarma(modifier: Modifier = Modifier) {
     val checked = remember { mutableStateOf(false) }
     val showDialog = remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val timer: CountDownTimer = object: CountDownTimer(6000, 1000) {
+        override fun onTick(millisUntilFinished: Long) {
+            // Nada que hacer aquí
+        }
+
+        override fun onFinish() {
+            setScreenState(context, false)
+        }
+    }
 
     if (showDialog.value) {
         AlertDialog(
@@ -192,6 +272,7 @@ fun CustomCheckboxDeshabilitarAlarma(modifier: Modifier = Modifier) {
                 } else {
                     checked.value = false
                     NotificationListener.NoHacerSonarMediaPlayerCheckbox = checked.value
+                    timer.start()
                 }
             },
             colors = CheckboxDefaults.colors(
