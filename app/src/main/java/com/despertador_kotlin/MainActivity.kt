@@ -47,6 +47,13 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import android.os.CountDownTimer
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 //import android.service.notification.NotificationListenerService
 class MainActivity : ComponentActivity() {
@@ -65,7 +72,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("enablingScreen01", "Notification text: 0")
-
+        // inicializar_servicio_end
+        val notificationListener = NotificationListener()
+        notificationListener.loadTime(this)
+        // inicializar_servicio_start
         // pantalla_bloqueada_start
         val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -179,6 +189,22 @@ class MainActivity : ComponentActivity() {
                     ) {
                         Greeting("esta es una alarma por notificaciones", Modifier.padding(bottom = 4.dp))
                         MyApp(this@MainActivity, Modifier.padding(bottom = 4.dp))
+                        var hour1 by remember { mutableStateOf("") }
+                        var minute1 by remember { mutableStateOf("") }
+                        TimeInput(hour1, { hour1 = it }, minute1, { minute1 = it }, Modifier.padding(bottom = 4.dp))
+
+                        var hour2 by remember { mutableStateOf("") }
+                        var minute2 by remember { mutableStateOf("") }
+                        TimeInput(hour2, { hour2 = it }, minute2, { minute2 = it }, Modifier.padding(bottom = 4.dp))
+                        LaunchedEffect(hour1, minute1, hour2, minute2) {
+
+                            val hour1Int = hour1.toIntOrNull() ?: -1
+                            val minute1Int = minute1.toIntOrNull() ?: -1
+                            val hour2Int = hour2.toIntOrNull() ?: -1
+                            val minute2Int = minute2.toIntOrNull() ?: -1
+                            val notificationListener = NotificationListener()
+                            notificationListener.setTime(this@MainActivity, hour1Int, minute1Int, hour2Int, minute2Int)
+                        }
                         CustomCheckboxDeshabilitarAlarma(Modifier.padding(bottom = 4.dp))
                     }
                 }
@@ -290,3 +316,36 @@ fun setVolumeToMin(context: Context) {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimeInput(
+    hourValue: String,
+    onHourValueChange: (String) -> Unit,
+    minuteValue: String,
+    onMinuteValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        TextField(
+            value = hourValue,
+            onValueChange = { newHour ->
+                if (newHour.isBlank() || (newHour.toIntOrNull() in 0..23)) {
+                    onHourValueChange(newHour)
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text("Hour") }
+        )
+
+        TextField(
+            value = minuteValue,
+            onValueChange = { newMinute ->
+                if (newMinute.isBlank() || (newMinute.toIntOrNull() in 0..59)) {
+                    onMinuteValueChange(newMinute)
+                }
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            label = { Text("Minute") }
+        )
+    }
+}

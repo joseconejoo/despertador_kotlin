@@ -26,12 +26,58 @@ class NotificationListener : NotificationListenerService() {
     companion object {
         var notificationPresent:Boolean = false
         var NoHacerSonarMediaPlayerCheckbox:Boolean = false
-
+        var hora_inicio: Int = 0
+        var minuto_inicio: Int = 0
+        var hora_final: Int = 0
+        var minuto_final: Int = 0
+        var service_iniciado: Int = 0
     }
 
     private lateinit var handler: Handler
     private lateinit var runnable: Runnable
+    fun saveTime(context: Context, hour1: Int, minute1: Int, hour2: Int, minute2: Int) {
+        try {
 
+            if (service_iniciado == 0) {
+                return
+            }
+            val sharedPref = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+
+            with (sharedPref.edit()) {
+                putInt("hour1", hour1)
+                putInt("minute1", minute1)
+                putInt("hour2", hour2)
+                putInt("minute2", minute2)
+                apply()
+            }
+        } catch (e: NullPointerException) {
+            Log.e("NotificationListener", "NullPointerException: ", e)
+        }
+    }
+    fun loadTime(context: Context) {
+        val sharedPref = context.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
+        hora_inicio = sharedPref.getInt("hour1", -1)
+        minuto_inicio = sharedPref.getInt("minute1", -1)
+        hora_final = sharedPref.getInt("hour2", -1)
+        minuto_final = sharedPref.getInt("minute2", -1)
+        Log.d("LoadingTimeAppx1", "Notification text: ${hora_inicio}, min ${minuto_inicio}," +
+                " tiempo final ${hora_final} min ${minuto_final}")
+
+    }
+
+
+    fun setTime(context: Context, hour1: Int, minute1: Int, hour2: Int, minute2: Int) {
+        hora_inicio = hour1
+        minuto_inicio = minute1
+        hora_final = hour2
+        minuto_final = minute2
+        if (service_iniciado == 1) {
+            saveTime(context, hour1, minute1, hour2, minute2)
+        }
+
+        Log.d("UpdatingTimeAppx1", "Notification text: ${hora_inicio}, min ${minuto_inicio}," +
+                " tiempo final ${hora_final} min ${minuto_final}")
+    }
     fun setVolumeToMax() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -76,7 +122,8 @@ class NotificationListener : NotificationListenerService() {
     }
     override fun onCreate() {
         super.onCreate()
-
+        loadTime(this)
+        service_iniciado = 1
         Log.d("NotificationListenerOnCreate", "Notification text: ")
 
         mediaPlayer = MediaPlayer.create(applicationContext, R.raw.alarm_sound)
