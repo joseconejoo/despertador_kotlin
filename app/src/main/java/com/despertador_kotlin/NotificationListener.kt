@@ -20,6 +20,7 @@ import androidx.core.app.NotificationCompat
 import android.provider.Settings
 import android.app.KeyguardManager
 import android.content.pm.PackageManager
+import java.io.IOException
 import java.util.Calendar
 class NotificationListener : NotificationListenerService() {
     private lateinit var mediaPlayer: MediaPlayer
@@ -115,7 +116,19 @@ class NotificationListener : NotificationListenerService() {
         val currentHour = currentTime.get(Calendar.HOUR_OF_DAY)
         //if (!NoHacerSonarMediaPlayerCheckbox && !mediaPlayer.isPlaying && (currentHour < 10 || currentHour > 14)) {
 
-        if (!NoHacerSonarMediaPlayerCheckbox && !mediaPlayer.isPlaying) {
+        //if (!NoHacerSonarMediaPlayerCheckbox && !mediaPlayer.isPlaying) {
+        if (!NoHacerSonarMediaPlayerCheckbox) {
+            //mediaPlayer.isLooping = true
+            try {
+                //mediaPlayer.prepare()
+                if (mediaPlayer != null) {
+                    mediaPlayer.release()
+                }
+                mediaPlayer = MediaPlayer.create(applicationContext, R.raw.alarm_sound)
+
+            } catch (e: Exception) {
+                Log.e("NotificationListener_1", "Exception while releasing MediaPlayer", e)
+            }
             setVolumeToMax()
             mediaPlayer.start()
         }
@@ -138,7 +151,7 @@ class NotificationListener : NotificationListenerService() {
                 checkActiveNotifications()
                 //handler.postDelayed(this, 60000)
                 // 60 segundos arriba
-                handler.postDelayed(this, 30000)
+                handler.postDelayed(this, 35000)
             }
         }
         handler.post(runnable)
@@ -175,7 +188,7 @@ class NotificationListener : NotificationListenerService() {
             notificationPresent = true
             if (!mediaPlayer.isPlaying) {
                 startMediaPlayer()
-
+                /*
                 val notificationIntent = Intent(this, MainActivity::class.java)
                 notificationIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                 val pendingIntent = PendingIntent.getActivity(
@@ -210,7 +223,7 @@ class NotificationListener : NotificationListenerService() {
                 }
 
                 // encender pantalla
-                /*
+
                 val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
                 val wakeLock = powerManager.newWakeLock(
                     PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
@@ -248,9 +261,9 @@ class NotificationListener : NotificationListenerService() {
         val extras = notification.extras
         val text = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.lowercase()
         if (text != null && text.contains("prog1", true)) {
-            notificationPresent = false
+            //notificationPresent = false
             if (mediaPlayer.isPlaying) {
-                mediaPlayer.stop()
+                //mediaPlayer.stop()
             }
             //stopRunnable()
         }
@@ -259,9 +272,9 @@ class NotificationListener : NotificationListenerService() {
     override fun onDestroy() {
         super.onDestroy()
         if (mediaPlayer.isPlaying) {
-            mediaPlayer.stop()
+            //mediaPlayer.stop()
         }
-        mediaPlayer.release()
+        //mediaPlayer.release()
         //stopRunnable()
     }
 
