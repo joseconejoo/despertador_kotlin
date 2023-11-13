@@ -84,11 +84,36 @@ class NotificationListener : NotificationListenerService() {
         val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxVolume, 0)
     }
+    fun isNotificationServiceEnabled(): Boolean {
+        val pkgName = packageName
+        val flat = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners"
+        )
+        return flat != null && flat.contains(pkgName)
+    }
+    fun openNotificationListenerSettings() {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        startActivity(intent)
+    }
     private fun checkActiveNotifications() {
-        val activeNotifications = getActiveNotifications()
-        for (sbn in activeNotifications) {
-            handleNotification(sbn)
+        if (!isNotificationServiceEnabled()) {
+            Log.e("NotificationListener", "Notification Listener Service is not enabled")
+            // Show a message to the user asking them to enable the service
+            openNotificationListenerSettings()
+            return
         }
+        try {
+            val activeNotifications = getActiveNotifications()
+            for (sbn in activeNotifications) {
+                handleNotification(sbn)
+            }
+        } catch (e: SecurityException) {
+            // Handle the security exception
+            Log.e("NotificationListener", "Permission to access notification listener service was denied", e)
+        }
+
+
     }
     fun tryReconnectService() {
         toggleNotificationListenerService()

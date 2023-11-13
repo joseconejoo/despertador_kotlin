@@ -54,6 +54,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import android.content.ServiceConnection
+import android.os.IBinder
 
 //import android.service.notification.NotificationListenerService
 class MainActivity : ComponentActivity() {
@@ -69,9 +71,40 @@ class MainActivity : ComponentActivity() {
             // El usuario ha rechazado los permisos de administración de dispositivos
         }
     }
+    fun isNotificationServiceEnabled(): Boolean {
+        val pkgName = packageName
+        val flat = Settings.Secure.getString(
+            contentResolver,
+            "enabled_notification_listeners"
+        )
+        return flat != null && flat.contains(pkgName)
+    }
+    fun openNotificationListenerSettings() {
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+        startActivity(intent)
+    }
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            // The service is connected, you can safely unbind it
+            Log.d("NotificationListener", "Service connected")
+        }
+
+        override fun onServiceDisconnected(name: ComponentName) {
+            // The service is disconnected
+            Log.d("NotificationListener", "Service disconnected")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("enablingScreen01", "Notification text: 0")
+        // check permiso1_start
+        if (!isNotificationServiceEnabled()) {
+            Log.e("NotificationListener", "Notification Listener Service is not enabled")
+            // Show a message to the user asking them to enable the service
+            openNotificationListenerSettings()
+            return
+        }
+        // check permiso1_end
         // inicializar_servicio_end
         val notificationListener = NotificationListener()
         notificationListener.loadTime(this)
@@ -160,8 +193,13 @@ class MainActivity : ComponentActivity() {
 
         mediaPlayer = MediaPlayer.create(applicationContext, R.raw.alarm_sound)
         // Iniciar servicio start
+        //val intent = Intent(this, NotificationListener::class.java)
         val intent = Intent(this, NotificationListener::class.java)
-        startService(intent)
+        if (!bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)) {
+            // The service is not running, so we start it
+            startService(intent)
+        }
+
         // Iniciar servicio end
 
         //mediaPlayer.start()
@@ -172,7 +210,7 @@ class MainActivity : ComponentActivity() {
             mediaPlayer.stop()
         }
         mediaPlayer.release()
-         */
+            */
         setContent {
             Despertador_kotlinTheme {
                 // A surface container using the 'background' color from the theme
@@ -212,7 +250,11 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unbind the service when the activity is destroyed
+        unbindService(serviceConnection)
+    }
 }
 
 @Composable

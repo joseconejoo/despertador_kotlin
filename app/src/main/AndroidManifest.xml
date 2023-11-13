@@ -38,6 +38,7 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
         <service
             android:name="com.despertador_kotlin.NotificationListener"
             android:exported="true"
@@ -47,6 +48,7 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
         <receiver
             android:name=".AutoStartReceiver"
             android:enabled="true"
